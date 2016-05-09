@@ -1,10 +1,31 @@
 /* global key */
 /* jscs:disable requireCamelCaseOrUpperCaseIdentifiers */
 import Ember from 'ember';
-import {request as ajax} from 'ic-ajax';
 
-const {$, Component, RSVP, computed, inject, observer} = Ember;
-const {filterBy} = computed;
+const {
+    Component,
+    RSVP,
+    computed,
+    run,
+    inject: {service},
+    isBlank,
+    isEmpty
+} = Ember;
+
+export function computedGroup(category) {
+    return computed('content', 'currentSearch', function () {
+        if (!this.get('currentSearch') || !this.get('content')) {
+            return [];
+        }
+
+        return this.get('content').filter((item) => {
+            let search = new RegExp(this.get('currentSearch'), 'ig');
+
+            return (item.category === category) &&
+                item.title.match(search);
+        });
+    });
+}
 
 export default Component.extend({
 
@@ -13,18 +34,16 @@ export default Component.extend({
     isLoading: false,
     contentExpiry: 10 * 1000,
     contentExpiresAt: false,
+    currentSearch: '',
 
-    posts: filterBy('content', 'category', 'Posts'),
-    pages: filterBy('content', 'category', 'Pages'),
-    users: filterBy('content', 'category', 'Users'),
-    tags:  filterBy('content', 'category', 'Tags'),
+    posts: computedGroup('Posts'),
+    pages: computedGroup('Pages'),
+    users: computedGroup('Users'),
+    tags: computedGroup('Tags'),
 
-    _store: inject.service('store'),
-    _routing: inject.service('-routing'),
-
-    _selectize: computed(function () {
-        return this.$('select')[0].selectize;
-    }),
+    _store: service('store'),
+    _routing: service('-routing'),
+    ajax: service(),
 
     refreshContent() {
         let promises = [];
@@ -33,19 +52,42 @@ export default Component.extend({
         let contentExpiresAt = this.get('contentExpiresAt');
 
         if (this.get('isLoading') || contentExpiresAt > now) {
-            return;
+            return RSVP.resolve();
         }
 
         this.set('isLoading', true);
+        this.set('content', []);
         promises.pushObject(this._loadPosts());
         promises.pushObject(this._loadUsers());
         promises.pushObject(this._loadTags());
 
-        RSVP.all(promises).then(() => { }).finally(() => {
+        return RSVP.all(promises).then(() => { }).finally(() => {
             this.set('isLoading', false);
             this.set('contentExpiresAt', new Date(now.getTime() + contentExpiry));
         });
     },
+
+    groupedContent: computed('posts', 'pages', 'users', 'tags', function () {
+        let groups = [];
+
+        if (!isEmpty(this.get('posts'))) {
+            groups.pushObject({groupName: 'Posts', options: this.get('posts')});
+        }
+
+        if (!isEmpty(this.get('pages'))) {
+            groups.pushObject({groupName: 'Pages', options: this.get('pages')});
+        }
+
+        if (!isEmpty(this.get('users'))) {
+            groups.pushObject({groupName: 'Users', options: this.get('users')});
+        }
+
+        if (!isEmpty(this.get('tags'))) {
+            groups.pushObject({groupName: 'Tags', options: this.get('tags')});
+        }
+
+        return groups;
+    }),
 
     _loadPosts() {
         let store = this.get('_store');
@@ -53,9 +95,8 @@ export default Component.extend({
         let postsQuery = {fields: 'id,title,page', limit: 'all', status: 'all', staticPages: 'all'};
         let content = this.get('content');
 
-        return ajax(postsUrl, {data: postsQuery}).then((posts) => {
-            content.removeObjects(this.get('posts'));
-            content.removeObjects(this.get('pages'));
+        return this.get('ajax').request(postsUrl, {data: postsQuery}).then((posts) => {
+
             content.pushObjects(posts.posts.map((post) => {
                 return {
                     id: `post.${post.id}`,
@@ -72,8 +113,7 @@ export default Component.extend({
         let usersQuery = {fields: 'name,slug', limit: 'all'};
         let content = this.get('content');
 
-        return ajax(usersUrl, {data: usersQuery}).then((users) => {
-            content.removeObjects(this.get('users'));
+        return this.get('ajax').request(usersUrl, {data: usersQuery}).then((users) => {
             content.pushObjects(users.users.map((user) => {
                 return {
                     id: `user.${user.slug}`,
@@ -90,8 +130,7 @@ export default Component.extend({
         let tagsQuery = {fields: 'name,slug', limit: 'all'};
         let content = this.get('content');
 
-        return ajax(tagsUrl, {data: tagsQuery}).then((tags) => {
-            content.removeObjects(this.get('tags'));
+        return this.get('ajax').request(tagsUrl, {data: tagsQuery}).then((tags) => {
             content.pushObjects(tags.tags.map((tag) => {
                 return {
                     id: `tag.${tag.slug}`,
@@ -102,11 +141,17 @@ export default Component.extend({
         });
     },
 
-    _keepSelectionClear: observer('selection', function () {
-        if (this.get('selection') !== null) {
-            this.set('selection', null);
+    _performSearch(term, resolve, reject) {
+        if (isBlank(term)) {
+            return resolve([]);
         }
-    }),
+
+        this.refreshContent().then(() => {
+            this.set('currentSearch', term);
+
+            return resolve(this.get('groupedContent'));
+        }).catch(reject);
+    },
 
     _setKeymasterScope() {
         key.setScope('search-input');
@@ -123,68 +168,38 @@ export default Component.extend({
 
     actions: {
         openSelected(selected) {
-            let transition = null;
-
             if (!selected) {
                 return;
             }
 
             if (selected.category === 'Posts' || selected.category === 'Pages') {
                 let id = selected.id.replace('post.', '');
-                transition = this.get('_routing.router').transitionTo('editor.edit', id);
+                this.get('_routing.router').transitionTo('editor.edit', id);
             }
 
             if (selected.category === 'Users') {
                 let id = selected.id.replace('user.', '');
-                transition = this.get('_routing.router').transitionTo('team.user', id);
+                this.get('_routing.router').transitionTo('team.user', id);
             }
 
             if (selected.category === 'Tags') {
                 let id = selected.id.replace('tag.', '');
-                transition = this.get('_routing.router').transitionTo('settings.tags.tag', id);
+                this.get('_routing.router').transitionTo('settings.tags.tag', id);
             }
-
-            transition.then(() => {
-                if (this.get('_selectize').$control_input.is(':focus')) {
-                    this._setKeymasterScope();
-                }
-            });
-        },
-
-        focusInput() {
-            this.get('_selectize').focus();
-        },
-
-        onInit() {
-            let selectize = this.get('_selectize');
-            let html = '<div class="dropdown-empty-message">Nothing found&hellip;</div>';
-
-            selectize.$empty_results_container = $(html);
-            selectize.$empty_results_container.hide();
-            selectize.$dropdown.append(selectize.$empty_results_container);
         },
 
         onFocus() {
             this._setKeymasterScope();
-            this.refreshContent();
         },
 
         onBlur() {
-            let selectize = this.get('_selectize');
-
             this._resetKeymasterScope();
-            selectize.$empty_results_container.hide();
         },
 
-        onType() {
-            let selectize = this.get('_selectize');
-
-            if (!selectize.hasOptions) {
-                selectize.open();
-                selectize.$empty_results_container.show();
-            } else {
-                selectize.$empty_results_container.hide();
-            }
+        search(term) {
+            return new RSVP.Promise((resolve, reject) => {
+                run.debounce(this, this._performSearch, term, resolve, reject, 200);
+            });
         }
     }
 

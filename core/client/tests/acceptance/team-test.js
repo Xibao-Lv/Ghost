@@ -34,8 +34,8 @@ describe('Acceptance: Team', function () {
     });
 
     it('redirects correctly when authenticated as author', function () {
-        const role = server.create('role', {name: 'Author'});
-        const user = server.create('user', {roles: [role], slug: 'test-user'});
+        let role = server.create('role', {name: 'Author'});
+        let user = server.create('user', {roles: [role], slug: 'test-user'});
 
         server.create('user', {slug: 'no-access'});
 
@@ -48,8 +48,8 @@ describe('Acceptance: Team', function () {
     });
 
     it('redirects correctly when authenticated as editor', function () {
-        const role = server.create('role', {name: 'Editor'});
-        const user = server.create('user', {roles: [role], slug: 'test-user'});
+        let role = server.create('role', {name: 'Editor'});
+        let user = server.create('user', {roles: [role], slug: 'test-user'});
 
         server.create('user', {slug: 'no-access'});
 
@@ -63,8 +63,8 @@ describe('Acceptance: Team', function () {
 
     describe('when logged in', function () {
         beforeEach(function () {
-            const role = server.create('role', {name: 'Admininstrator'});
-            const user = server.create('user', {roles: [role]});
+            let role = server.create('role', {name: 'Admininstrator'});
+            let user = server.create('user', {roles: [role]});
 
             server.loadFixtures();
 
@@ -72,8 +72,8 @@ describe('Acceptance: Team', function () {
         });
 
         it('it renders and navigates correctly', function () {
-            const user1 = server.create('user');
-            const user2 = server.create('user');
+            let user1 = server.create('user');
+            let user2 = server.create('user');
 
             visit('/team');
 
@@ -112,7 +112,7 @@ describe('Acceptance: Team', function () {
         });
 
         describe('invite new user', function () {
-            let emailInputField = '.modal-body .form-group input[name="email"]';
+            let emailInputField = '.fullscreen-modal input[name="email"]';
 
             // @TODO: Evaluate after the modal PR goes in
             it('modal loads correctly', function () {
@@ -162,8 +162,6 @@ describe('Acceptance: Team', function () {
                 visit('/team');
 
                 andThen(() => {
-                    expect(currentURL(), 'currentURL').to.equal('/team');
-
                     expect(find('.user-list.invited-users .user-list-item').length, 'number of invited users').to.equal(0);
                 });
 
@@ -177,7 +175,7 @@ describe('Acceptance: Team', function () {
                 });
 
                 fillIn(emailInputField, 'test@example.com');
-                click('.modal-footer .js-button-accept');
+                click('.fullscreen-modal .btn-green');
 
                 andThen(() => {
                     expect(find('.user-list.invited-users .user-list-item').length, 'number of invited users').to.equal(1);
@@ -197,33 +195,42 @@ describe('Acceptance: Team', function () {
 
                 visit('/team');
 
+                // check our users lists are what we expect
                 andThen(() => {
-                    expect(currentURL(), 'currentURL').to.equal('/team');
-
-                    expect(find('.user-list.invited-users .user-list-item').length, 'number of invited users').to.equal(1);
+                    expect(find('.user-list.invited-users .user-list-item').length, 'number of invited users')
+                        .to.equal(1);
                     // number of active users is 2 because of the logged-in user
-                    expect(find('.user-list.active-users .user-list-item').length, 'number of active users').to.equal(2);
+                    expect(find('.user-list.active-users .user-list-item').length, 'number of active users')
+                        .to.equal(2);
                 });
 
+                // click the "invite new user" button to open the modal
                 click('.view-actions .btn-green');
+
+                // fill in and submit the invite user modal with an existing user
                 fillIn(emailInputField, 'test1@example.com');
-                click('.modal-footer .js-button-accept');
+                click('.fullscreen-modal .btn-green');
 
                 andThen(() => {
-                    expect(find('.gh-alerts .gh-alert').length, 'number of alerts').to.equal(1);
-                    expect(find('.gh-alerts .gh-alert:first').hasClass('gh-alert-yellow'), 'alert is yellow').to.be.true;
-                    expect(find('.gh-alerts .gh-alert:first .gh-alert-content').text(), 'first alert\'s text').to.contain('A user with that email address already exists.');
+                    // check the inline-validation
+                    expect(find('.fullscreen-modal .error .response').text().trim(), 'inviting existing user error')
+                        .to.equal('A user with that email address already exists.');
                 });
 
-                click('.gh-alerts .gh-alert:first .gh-alert-close');
-                click('.view-actions .btn-green');
+                // fill in and submit the invite user modal with an invited user
                 fillIn(emailInputField, 'test2@example.com');
-                click('.modal-footer .js-button-accept');
+                click('.fullscreen-modal .btn-green');
 
                 andThen(() => {
-                    expect(find('.gh-alerts .gh-alert').length, 'number of alerts').to.equal(1);
-                    expect(find('.gh-alerts .gh-alert:first').hasClass('gh-alert-yellow'), 'alert is yellow').to.be.true;
-                    expect(find('.gh-alerts .gh-alert:first .gh-alert-content').text(), 'first alert\'s text').to.contain('A user with that email address was already invited.');
+                    // check the inline-validation
+                    expect(find('.fullscreen-modal .error .response').text().trim(), 'inviting invited user error')
+                        .to.equal('A user with that email address was already invited.');
+
+                    // ensure that there's been no change in our user lists
+                    expect(find('.user-list.invited-users .user-list-item').length, 'number of invited users after failed invites')
+                        .to.equal(1);
+                    expect(find('.user-list.active-users .user-list-item').length, 'number of active users after failed invites')
+                        .to.equal(2);
                 });
             });
         });
@@ -233,6 +240,8 @@ describe('Acceptance: Team', function () {
 
             beforeEach(function () {
                 server.create('user', {slug: 'test-1', name: 'Test User'});
+
+                server.loadFixtures();
             });
 
             it('input fields reset and validate correctly', function () {
@@ -249,7 +258,7 @@ describe('Acceptance: Team', function () {
                 triggerEvent('.user-details-top .first-form-group input.user-name', 'blur');
 
                 andThen(() => {
-                    expect(find('.user-details-top .first-form-group').hasClass('error'), 'input is in error state').to.be.true;
+                    expect(find('.user-details-top .first-form-group').hasClass('error'), 'username input is in error state with blank input').to.be.true;
                 });
 
                 // test too long user name
@@ -257,7 +266,7 @@ describe('Acceptance: Team', function () {
                 triggerEvent('.user-details-top .first-form-group input.user-name', 'blur');
 
                 andThen(() => {
-                    expect(find('.user-details-top .first-form-group').hasClass('error'), 'input is in error state').to.be.true;
+                    expect(find('.user-details-top .first-form-group').hasClass('error'), 'username input is in error state with too long input').to.be.true;
                 });
 
                 // reset name field
@@ -285,7 +294,7 @@ describe('Acceptance: Team', function () {
                 triggerEvent('.user-details-bottom input[name="email"]', 'blur');
 
                 andThen(() => {
-                    expect(find('.user-details-bottom .form-group:nth-of-type(2)').hasClass('error'), 'email input should be in error state').to.be.true;
+                    expect(find('.user-details-bottom .form-group:nth-of-type(2)').hasClass('error'), 'email input should be in error state with invalid email').to.be.true;
                 });
 
                 fillIn('.user-details-bottom input[name="email"]', 'test@example.com');
@@ -304,36 +313,97 @@ describe('Acceptance: Team', function () {
                     expect(find('.user-details-bottom .form-group:nth-of-type(4)').hasClass('error'), 'website input should be in error state').to.be.true;
                 });
 
+                fillIn('#user-facebook', '');
+                fillIn('#user-facebook', ')(*&%^%)');
+                triggerEvent('#user-facebook', 'blur');
+
+                andThen(() => {
+                    expect(find('.user-details-bottom .form-group:nth-of-type(5)').hasClass('error'), 'facebook input should be in error state').to.be.true;
+                });
+
+                fillIn('#user-facebook', '');
+                fillIn('#user-facebook', 'name');
+                triggerEvent('#user-facebook', 'blur');
+
+                andThen(() => {
+                    expect(find('#user-facebook').val()).to.be.equal('https://www.facebook.com/name');
+                    expect(find('.user-details-bottom .form-group:nth-of-type(5)').hasClass('error'), 'facebook input should be in error state').to.be.false;
+                });
+
+                fillIn('#user-facebook', '');
+                fillIn('#user-facebook', 'http://twitter.com/user');
+                triggerEvent('#user-facebook', 'blur');
+
+                andThen(() => {
+                    expect(find('.user-details-bottom .form-group:nth-of-type(5)').hasClass('error'), 'facebook input should be in error state').to.be.true;
+                });
+
+                fillIn('#user-facebook', '');
+                fillIn('#user-facebook', 'facebook.com/user');
+                triggerEvent('#user-facebook', 'blur');
+
+                andThen(() => {
+                    expect(find('#user-facebook').val()).to.be.equal('https://www.facebook.com/user');
+                    expect(find('.user-details-bottom .form-group:nth-of-type(5)').hasClass('error'), 'facebook input should be in error state').to.be.false;
+                });
+
+                fillIn('#user-twitter', '');
+                fillIn('#user-twitter', ')(*&%^%)');
+                triggerEvent('#user-twitter', 'blur');
+
+                andThen(() => {
+                    expect(find('.user-details-bottom .form-group:nth-of-type(6)').hasClass('error'), 'twitter input should be in error state').to.be.true;
+                });
+
+                fillIn('#user-twitter', '');
+                fillIn('#user-twitter', 'name');
+                triggerEvent('#user-twitter', 'blur');
+
+                andThen(() => {
+                    expect(find('#user-twitter').val()).to.be.equal('https://twitter.com/name');
+                    expect(find('.user-details-bottom .form-group:nth-of-type(6)').hasClass('error'), 'twitter input should be in error state').to.be.false;
+                });
+
+                fillIn('#user-twitter', '');
+                fillIn('#user-twitter', 'http://github.com/user');
+                triggerEvent('#user-twitter', 'blur');
+
+                andThen(() => {
+                    expect(find('.user-details-bottom .form-group:nth-of-type(6)').hasClass('error'), 'twitter input should be in error state').to.be.true;
+                });
+
+                fillIn('#user-twitter', '');
+                fillIn('#user-twitter', 'twitter.com/user');
+                triggerEvent('#user-twitter', 'blur');
+
+                andThen(() => {
+                    expect(find('#user-twitter').val()).to.be.equal('https://twitter.com/user');
+                    expect(find('.user-details-bottom .form-group:nth-of-type(6)').hasClass('error'), 'twitter input should be in error state').to.be.false;
+                });
+
                 fillIn('#user-website', '');
                 fillIn('#user-bio', new Array(210).join('a'));
                 triggerEvent('#user-bio', 'blur');
 
                 andThen(() => {
-                    expect(find('.user-details-bottom .form-group:nth-of-type(5)').hasClass('error'), 'bio input should be in error state').to.be.true;
+                    expect(find('.user-details-bottom .form-group:nth-of-type(7)').hasClass('error'), 'bio input should be in error state').to.be.true;
                 });
             });
         });
 
-        describe('with 404', function () {
-            beforeEach(function () {
-                errorOverride();
+        it('redirects to 404 when tag does not exist', function () {
+            server.get('/users/slug/unknown/', function () {
+                return new Mirage.Response(404, {'Content-Type': 'application/json'}, {errors: [{message: 'User not found.', errorType: 'NotFoundError'}]});
             });
 
-            afterEach(function () {
+            errorOverride();
+
+            visit('/team/unknown');
+
+            andThen(() => {
                 errorReset();
-            });
-
-            it('redirects to 404 when tag does not exist', function () {
-                server.get('/users/slug/unknown/', function () {
-                    return new Mirage.Response(404, {'Content-Type': 'application/json'}, {errors: [{message: 'User not found.', errorType: 'NotFoundError'}]});
-                });
-
-                visit('/team/unknown');
-
-                andThen(() => {
-                    expect(currentPath()).to.equal('error404');
-                    expect(currentURL()).to.equal('/team/unknown');
-                });
+                expect(currentPath()).to.equal('error404');
+                expect(currentURL()).to.equal('/team/unknown');
             });
         });
     });

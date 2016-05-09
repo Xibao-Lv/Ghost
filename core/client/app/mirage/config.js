@@ -1,5 +1,6 @@
 /* jscs:disable requireCamelCaseOrUpperCaseIdentifiers */
 import Ember from 'ember';
+import Mirage from 'ember-cli-mirage';
 
 const {$, isBlank} = Ember;
 
@@ -51,6 +52,22 @@ export default function () {
     this.namespace = 'ghost/api/v0.1';    // make this `api`, for example, if your API is namespaced
     // this.timing = 400;      // delay for each request, automatically set to 0 during testing
 
+    // Mock endpoints here to override real API requests during development
+
+    // keep this line, it allows all other API requests to hit the real server
+    this.passthrough();
+
+    // add any external domains to make sure those get passed through too
+    this.passthrough('https://count.ghost.org/');
+    this.passthrough('http://www.gravatar.com/**');
+}
+
+// Mock all endpoints here as there is no real API during testing
+export function testConfig() {
+    // this.urlPrefix = '';    // make this `http://localhost:8080`, for example, if your API is on a different server
+    this.namespace = 'ghost/api/v0.1';    // make this `api`, for example, if your API is namespaced
+    // this.timing = 400;      // delay for each request, automatically set to 0 during testing
+
     /* Authentication ------------------------------------------------------- */
 
     this.post('/authentication/token', function () {
@@ -62,10 +79,34 @@ export default function () {
         };
     });
 
+    this.post('/authentication/passwordreset', function (db, request) {
+        // jscs:disable requireObjectDestructuring
+        let {passwordreset} = $.deparam(request.requestBody);
+        let email = passwordreset[0].email;
+        // jscs:enable requireObjectDestructuring
+
+        if (email === 'unknown@example.com') {
+            return new Mirage.Response(404, {}, {
+                errors: [
+                    {
+                        message: 'There is no user with that email address.',
+                        errorType: 'NotFoundError'
+                    }
+                ]
+            });
+        } else {
+            return {
+                passwordreset: [
+                    {message: 'Check your email for further instructions.'}
+                ]
+            };
+        }
+    });
+
     /* Download Count ------------------------------------------------------- */
 
     let downloadCount = 0;
-    this.get('http://ghost.org/count/', function () {
+    this.get('https://count.ghost.org/', function () {
         downloadCount++;
         return {
             count: downloadCount
@@ -98,6 +139,12 @@ export default function () {
         // TODO: handle status/staticPages/author params
         let response = paginatedResponse('posts', db.posts, request);
         return response;
+    });
+
+    this.del('/posts/:id/', function (db, request) {
+        db.posts.remove(request.params.id);
+
+        return new Mirage.Response(204, {}, {});
     });
 
     /* Roles ---------------------------------------------------------------- */
@@ -134,7 +181,7 @@ export default function () {
     });
 
     this.put('/settings/', function (db, request) {
-        let newSettings = JSON.parse(request.requestBody);
+        let newSettings = JSON.parse(request.requestBody).settings;
 
         db.settings.remove();
         db.settings.insert(newSettings);
@@ -143,6 +190,12 @@ export default function () {
             meta: {},
             settings: db.settings
         };
+    });
+
+    /* Apps - Slack Test Notification --------------------------------------------------------- */
+
+    this.post('/slack/test', function () {
+        return {};
     });
 
     /* Slugs ---------------------------------------------------------------- */
@@ -242,7 +295,11 @@ export default function () {
         };
     });
 
-    this.del('/tags/:id/', 'tag');
+    this.del('/tags/:id/', function (db, request) {
+        db.tags.remove(request.params.id);
+
+        return new Mirage.Response(204, {}, {});
+    });
 
     /* Users ---------------------------------------------------------------- */
 
@@ -279,18 +336,25 @@ export default function () {
         };
     });
 
-    this.del('/users/:id/', 'user');
+    this.del('/users/:id/', function (db, request) {
+        db.users.remove(request.params.id);
+
+        return new Mirage.Response(204, {}, {});
+    });
 
     this.get('/users/:id', function (db, request) {
         return {
             users: [db.users.find(request.params.id)]
         };
     });
-}
 
-/*
-You can optionally export a config that is only loaded during tests
-export function testConfig() {
+    this.put('/users/:id/', function (db, request) {
+        let {id} = request.params;
+        let [attrs] = JSON.parse(request.requestBody).users;
+        let record = db.users.update(id, attrs);
 
+        return {
+            user: record
+        };
+    });
 }
-*/

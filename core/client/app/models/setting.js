@@ -1,8 +1,7 @@
 /* jscs:disable requireCamelCaseOrUpperCaseIdentifiers */
-import DS from 'ember-data';
+import Model from 'ember-data/model';
+import attr from 'ember-data/attr';
 import ValidationEngine from 'ghost/mixins/validation-engine';
-
-const {Model, attr} = DS;
 
 export default Model.extend(ValidationEngine, {
     validationType: 'setting',
@@ -19,8 +18,11 @@ export default Model.extend(ValidationEngine, {
     availableThemes: attr(),
     ghost_head: attr('string'),
     ghost_foot: attr('string'),
+    facebook: attr('string'),
+    twitter: attr('twitter-url-user'),
     labs: attr('string'),
-    navigation: attr('string'),
+    navigation: attr('navigation-settings'),
     isPrivate: attr('boolean'),
-    password: attr('string')
+    password: attr('string'),
+    slack: attr('slack-settings')
 });

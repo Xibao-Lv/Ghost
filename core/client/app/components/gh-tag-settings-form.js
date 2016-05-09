@@ -1,8 +1,16 @@
 /* global key */
 import Ember from 'ember';
 import boundOneWay from 'ghost/utils/bound-one-way';
+import {invokeAction} from 'ember-invoke-action';
 
-const {Component, Handlebars, computed, get, inject} = Ember;
+const {
+    Component,
+    Handlebars,
+    computed,
+    get,
+    inject: {service}
+} = Ember;
+const {reads} = computed;
 
 export default Component.extend({
 
@@ -11,15 +19,15 @@ export default Component.extend({
     scratchName: boundOneWay('tag.name'),
     scratchSlug: boundOneWay('tag.slug'),
     scratchDescription: boundOneWay('tag.description'),
-    scratchMetaTitle: boundOneWay('tag.meta_title'),
-    scratchMetaDescription: boundOneWay('tag.meta_description'),
+    scratchMetaTitle: boundOneWay('tag.metaTitle'),
+    scratchMetaDescription: boundOneWay('tag.metaDescription'),
 
     isViewingSubview: false,
 
-    config: inject.service(),
+    config: service(),
+    mediaQueries: service(),
 
-    mediaQueries: Ember.inject.service(),
-    isMobile: Ember.computed.reads('mediaQueries.maxWidth600'),
+    isMobile: reads('mediaQueries.maxWidth600'),
 
     title: computed('tag.isNew', function () {
         if (this.get('tag.isNew')) {
@@ -101,19 +109,15 @@ export default Component.extend({
 
     actions: {
         setProperty(property, value) {
-            this.attrs.setProperty(property, value);
+            invokeAction(this, 'setProperty', property, value);
         },
 
         setCoverImage(image) {
-            this.attrs.setProperty('image', image);
+            invokeAction(this, 'setProperty', 'image', image);
         },
 
         clearCoverImage() {
-            this.attrs.setProperty('image', '');
-        },
-
-        setUploaderReference() {
-            // noop
+            invokeAction(this, 'setProperty', 'image', '');
         },
 
         openMeta() {
@@ -125,7 +129,7 @@ export default Component.extend({
         },
 
         deleteTag() {
-            this.sendAction('openModal', 'delete-tag', this.get('tag'));
+            invokeAction(this, 'showDeleteTagModal');
         }
     }
 

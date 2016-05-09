@@ -34,10 +34,6 @@
     cursor: move;
 }
 
-.gh-blognav-url .fake-placeholder {
-    color: #c1c1c1;
-}
-
 .gh-blognav-line {
     display: flex;
     width: 100%;
@@ -83,13 +79,9 @@
     background: color(var(--green) lightness(-10%));
 }
 
-.gh-blognav-item:last-child {
+.gh-blognav-item:not(.gh-blognav-item--sortable) {
     padding-left: calc(16px + 20px);
     /* icon-grab + nav-item padding) */
-}
-
-.gh-blognav-item:last-child .gh-blognav-grab {
-    display: none;
 }
 
 /* Remove space between inputs on smaller screens */

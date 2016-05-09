@@ -1,5 +1,5 @@
 {{#gh-dropdown-button tagName="header" class="gh-nav-menu" dropdownName="user-menu"}}
-    <div class="gh-nav-menu-icon" style="background-image: url(https://s3.amazonaws.com/f.cl.ly/items/3I0g431b2b3q00253K1V/d16dc430c9c4f5c09d6ca09be3e5c72fdb21c1ac.png)"></div>
+    <div class="gh-nav-menu-icon" style={{navMenuIcon}}></div>
     <div class="gh-nav-menu-details">
         <div class="gh-nav-menu-details-blog">{{config.blogTitle}}</div>
         <div class="gh-nav-menu-details-user">{{session.user.name}}</div>
@@ -34,7 +34,8 @@
             <li>{{#link-to "settings.navigation" classNames="gh-nav-settings-navigation"}}<i class="icon-compass"></i>Navigation{{/link-to}}</li>
             <li>{{#link-to "settings.tags" classNames="gh-nav-settings-tags"}}<i class="icon-tag"></i>Tags{{/link-to}}</li>
             <li>{{#link-to "settings.code-injection" classNames="gh-nav-settings-code-injection"}}<i class="icon-code"></i>Code Injection{{/link-to}}</li>
-            <li>{{#link-to "settings.labs" classNames="gh-nav-settings-labs"}}<i class="icon-apps"></i>Labs{{/link-to}}</li>
+            <li>{{#link-to "settings.apps" classNames="gh-nav-settings-apps"}}<i class="icon-box"></i>Apps{{/link-to}}</li>
+            <li>{{#link-to "settings.labs" classNames="gh-nav-settings-labs"}}<i class="icon-labs"></i>Labs{{/link-to}}</li>
         </ul>
     {{/if}}
 </section>
@@ -53,7 +54,7 @@
                 <li role="presentation"><a class="dropdown-item help-menu-tweet" role="menuitem" tabindex="-1" href="https://twitter.com/intent/tweet?text=%40TryGhost+Hi%21+Can+you+help+me+with+&related=TryGhost" target="_blank" onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;"><i class="icon-twitter"></i> Tweet @TryGhost!</a></li>
                 <li class="divider"></li>
                 <li role="presentation"><a class="dropdown-item help-menu-how-to" role="menuitem" tabindex="-1" href="http://support.ghost.org/how-to-use-ghost/" target="_blank"><i class="icon-book"></i> How to Use Ghost</a></li>
-                <li role="presentation"><a class="dropdown-item help-menu-markdown" role="menuitem" tabindex="-1" href="" {{action "openModal" "markdown"}}><i class="icon-markdown"></i> Markdown Help</a></li>
+                <li role="presentation"><a class="dropdown-item help-menu-markdown" role="menuitem" tabindex="-1" href="" {{action "showMarkdownHelp"}}><i class="icon-markdown"></i> Markdown Help</a></li>
                 <li class="divider"></li>
                 <li role="presentation"><a class="dropdown-item help-menu-wishlist" role="menuitem" tabindex="-1" href="http://ideas.ghost.org/" target="_blank"><i class="icon-idea"></i> Wishlist</a></li>
             </ul>

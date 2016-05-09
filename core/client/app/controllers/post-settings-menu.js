@@ -1,23 +1,36 @@
 import Ember from 'ember';
 import {parseDateString} from 'ghost/utils/date-formatting';
 import SettingsMenuMixin from 'ghost/mixins/settings-menu-controller';
-import SlugGenerator from 'ghost/models/slug-generator';
 import boundOneWay from 'ghost/utils/bound-one-way';
 import isNumber from 'ghost/utils/isNumber';
 
-const {$, ArrayProxy, Controller, Handlebars, PromiseProxyMixin, RSVP, computed, guidFor, inject, isArray, observer, run} = Ember;
+const {
+    $,
+    ArrayProxy,
+    Controller,
+    Handlebars,
+    PromiseProxyMixin,
+    RSVP,
+    computed,
+    guidFor,
+    inject: {service, controller},
+    isArray,
+    isBlank,
+    observer,
+    run
+} = Ember;
 
 export default Controller.extend(SettingsMenuMixin, {
     debounceId: null,
     lastPromise: null,
     selectedAuthor: null,
-    uploaderReference: null,
 
-    application: inject.controller(),
-    config: inject.service(),
-    ghostPaths: inject.service('ghost-paths'),
-    notifications: inject.service(),
-    session: inject.service(),
+    application: controller(),
+    config: service(),
+    ghostPaths: service(),
+    notifications: service(),
+    session: service(),
+    slugGenerator: service(),
 
     initializeSelectedAuthor: observer('model', function () {
         return this.get('model.author').then((author) => {
@@ -45,14 +58,6 @@ export default Controller.extend(SettingsMenuMixin, {
 
     slugValue: boundOneWay('model.slug'),
 
-    // Lazy load the slug generator
-    slugGenerator: computed(function () {
-        return SlugGenerator.create({
-            ghostPaths: this.get('ghostPaths'),
-            slugType: 'post'
-        });
-    }),
-
     // Requests slug from title
     generateAndSetSlug(destination) {
         let title = this.get('model.titleScratch');
@@ -65,8 +70,10 @@ export default Controller.extend(SettingsMenuMixin, {
         }
 
         promise = RSVP.resolve(afterSave).then(() => {
-            return this.get('slugGenerator').generateSlug(title).then((slug) => {
-                this.set(destination, slug);
+            return this.get('slugGenerator').generateSlug('post', title).then((slug) => {
+                if (!isBlank(slug)) {
+                    this.set(destination, slug);
+                }
             }).catch(() => {
                 // Nothing to do (would be nice to log this somewhere though),
                 // but a rejected promise needs to be handled here so that a resolved
@@ -77,8 +84,8 @@ export default Controller.extend(SettingsMenuMixin, {
         this.set('lastPromise', promise);
     },
 
-    metaTitleScratch: boundOneWay('model.meta_title'),
-    metaDescriptionScratch: boundOneWay('model.meta_description'),
+    metaTitleScratch: boundOneWay('model.metaTitle'),
+    metaDescriptionScratch: boundOneWay('model.metaDescription'),
 
     seoTitle: computed('model.titleScratch', 'metaTitleScratch', function () {
         let metaTitle = this.get('metaTitleScratch') || '';
@@ -230,7 +237,7 @@ export default Controller.extend(SettingsMenuMixin, {
                 return;
             }
 
-            this.get('slugGenerator').generateSlug(newSlug).then((serverSlug) => {
+            this.get('slugGenerator').generateSlug('post', newSlug).then((serverSlug) => {
                 // If after getting the sanitized and unique slug back from the API
                 // we end up with a slug that matches the existing slug, abort the change
                 if (serverSlug === slug) {
@@ -282,25 +289,27 @@ export default Controller.extend(SettingsMenuMixin, {
          * (#1351)
          */
         setPublishedAt(userInput) {
-            let newPublishedAt = parseDateString(userInput);
-            let publishedAt = moment(this.get('model.published_at'));
-            let errMessage = '';
-
             if (!userInput) {
-                // Clear out the published_at field for a draft
+                // Clear out the publishedAt field for a draft
                 if (this.get('model.isDraft')) {
-                    this.set('model.published_at', null);
+                    this.set('model.publishedAt', null);
                 }
 
                 return;
             }
 
+            let newPublishedAt = parseDateString(userInput);
+            let publishedAt = moment(this.get('model.publishedAt'));
+            let errMessage = '';
+
+            // Clear previous errors
+            this.get('model.errors').remove('post-setting-date');
+
             // Validate new Published date
             if (!newPublishedAt.isValid()) {
                 errMessage = 'Published Date must be a valid date with format: ' +
                     'DD MMM YY @ HH:mm (e.g. 6 Dec 14 @ 15:00)';
-            }
-            if (newPublishedAt.diff(new Date(), 'h') > 0) {
+            } else if (newPublishedAt.diff(new Date(), 'h') > 0) {
                 errMessage = 'Published Date cannot currently be in the future.';
             }
 
@@ -310,13 +319,13 @@ export default Controller.extend(SettingsMenuMixin, {
                 return;
             }
 
-            // Do nothing if the user didn't actually change the date
+            // Validation complete, update the view
+            this.set('model.publishedAt', newPublishedAt);
+
+            // Don't save the date if the user didn't actually changed the date
             if (publishedAt && publishedAt.isSame(newPublishedAt)) {
                 return;
             }
-
-            // Validation complete
-            this.set('model.published_at', newPublishedAt);
 
             // If this is a new post.  Don't save the model.  Defer the save
             // to the user pressing the save button
@@ -331,7 +340,7 @@ export default Controller.extend(SettingsMenuMixin, {
         },
 
         setMetaTitle(metaTitle) {
-            let property = 'meta_title';
+            let property = 'metaTitle';
             let model = this.get('model');
             let currentTitle = model.get(property) || '';
 
@@ -352,7 +361,7 @@ export default Controller.extend(SettingsMenuMixin, {
         },
 
         setMetaDescription(metaDescription) {
-            let property = 'meta_description';
+            let property = 'metaDescription';
             let model = this.get('model');
             let currentDescription = model.get(property) || '';
 
@@ -396,14 +405,6 @@ export default Controller.extend(SettingsMenuMixin, {
                 this.showErrors(errors);
                 this.get('model').rollbackAttributes();
             });
-        },
-
-        resetUploader() {
-            let uploader = this.get('uploaderReference');
-
-            if (uploader && uploader[0]) {
-                uploader[0].uploaderUi.reset();
-            }
         },
 
         resetPubDate() {

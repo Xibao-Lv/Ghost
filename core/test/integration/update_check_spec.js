@@ -1,12 +1,11 @@
 /*globals describe, before, beforeEach, afterEach, after, it*/
-/*jshint expr:true*/
-var testUtils       = require('../utils'),
-    should          = require('should'),
-    rewire          = require('rewire'),
+var testUtils   = require('../utils'),
+    should      = require('should'),
+    rewire      = require('rewire'),
 
     // Stuff we are testing
-    packageInfo     = require('../../../package'),
-    updateCheck     = rewire('../../server/update-check');
+    packageInfo = require('../../../package'),
+    updateCheck = rewire('../../server/update-check');
 
 describe('Update Check', function () {
     var environmentsOrig;
@@ -20,7 +19,7 @@ describe('Update Check', function () {
         updateCheck.__set__('allowedCheckEnvironments', environmentsOrig);
     });
 
-    beforeEach(testUtils.setup('owner', 'posts'));
+    beforeEach(testUtils.setup('owner', 'posts', 'perms:setting', 'perms:user', 'perms:init'));
 
     afterEach(testUtils.teardown);
 
@@ -33,15 +32,15 @@ describe('Update Check', function () {
             data.node_version.should.equal(process.versions.node);
             data.env.should.equal(process.env.NODE_ENV);
             data.database_type.should.match(/sqlite3|pg|mysql/);
-            data.blog_id.should.be.a.string;
-            data.blog_id.should.not.be.empty;
+            data.blog_id.should.be.a.String();
+            data.blog_id.should.not.be.empty();
             data.theme.should.be.equal('casper');
-            data.apps.should.be.a.string;
-            data.blog_created_at.should.be.a.number;
+            data.apps.should.be.a.String();
+            data.blog_created_at.should.be.a.Number();
             data.user_count.should.be.above(0);
             data.post_count.should.be.above(0);
-            data.npm_version.should.be.a.string;
-            data.npm_version.should.not.be.empty;
+            data.npm_version.should.be.a.String();
+            data.npm_version.should.not.be.empty();
 
             done();
         }).catch(done);

@@ -1,5 +1,4 @@
 /*globals describe, afterEach, it */
-/*jshint expr:true*/
 var _           = require('lodash'),
     should      = require('should'),
     sinon       = require('sinon'),
@@ -472,6 +471,19 @@ describe('Sitemap', function () {
 
                 generator.getPriorityForDatum({}).should.equal(0.8);
             });
+            it('adds an image:image element if page has an image', function () {
+                var generator = new PostGenerator(),
+                    urlNode = generator.createUrlNodeFromDatum(_.extend(makeFakeDatum(100), {
+                        image: 'page-100.jpg'
+                    })),
+                    hasImage;
+
+                hasImage = _.any(urlNode.url, function (node) {
+                    return !_.isUndefined(node['image:image']);
+                });
+
+                hasImage.should.equal(true);
+            });
         });
 
         describe('TagGenerator', function () {
@@ -480,6 +492,20 @@ describe('Sitemap', function () {
 
                 generator.getPriorityForDatum({}).should.equal(0.6);
             });
+
+            it('adds an image:image element if tag has an image', function () {
+                var generator = new PostGenerator(),
+                    urlNode = generator.createUrlNodeFromDatum(_.extend(makeFakeDatum(100), {
+                        image: 'tag-100.jpg'
+                    })),
+                    hasImage;
+
+                hasImage = _.any(urlNode.url, function (node) {
+                    return !_.isUndefined(node['image:image']);
+                });
+
+                hasImage.should.equal(true);
+            });
         });
 
         describe('UserGenerator', function () {
@@ -487,6 +513,20 @@ describe('Sitemap', function () {
                 var generator = new UserGenerator();
 
                 generator.getPriorityForDatum({}).should.equal(0.6);
+            });
+
+            it('adds an image:image element if user has a cover image', function () {
+                var generator = new PostGenerator(),
+                    urlNode = generator.createUrlNodeFromDatum(_.extend(makeFakeDatum(100), {
+                        cover: 'user-100.jpg'
+                    })),
+                    hasImage;
+
+                hasImage = _.any(urlNode.url, function (node) {
+                    return !_.isUndefined(node['image:image']);
+                });
+
+                hasImage.should.equal(true);
             });
         });
     });

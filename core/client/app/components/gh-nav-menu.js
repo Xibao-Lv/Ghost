@@ -1,6 +1,10 @@
 import Ember from 'ember';
 
-const {Component, inject} = Ember;
+const {
+    Component,
+    inject: {service},
+    computed
+} = Ember;
 
 export default Component.extend({
     tagName: 'nav',
@@ -9,8 +13,15 @@ export default Component.extend({
 
     open: false,
 
-    config: inject.service(),
-    session: inject.service(),
+    navMenuIcon: computed('ghostPaths.subdir', function () {
+        let url = `${this.get('ghostPaths.subdir')}/ghost/img/ghosticon.jpg`;
+
+        return Ember.String.htmlSafe(`background-image: url(${url})`);
+    }),
+
+    config: service(),
+    session: service(),
+    ghostPaths: service(),
 
     mouseEnter() {
         this.sendAction('onMouseEnter');
@@ -21,8 +32,8 @@ export default Component.extend({
             this.sendAction('toggleMaximise');
         },
 
-        openModal(modal) {
-            this.sendAction('openModal', modal);
+        showMarkdownHelp() {
+            this.sendAction('showMarkdownHelp');
         },
 
         closeMobileMenu() {

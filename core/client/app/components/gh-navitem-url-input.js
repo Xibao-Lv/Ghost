@@ -1,4 +1,5 @@
 import Ember from 'ember';
+import {invokeAction} from 'ember-invoke-action';
 
 const {TextField, computed, run} = Ember;
 
@@ -20,14 +21,9 @@ let isRelative = function (url) {
 
 export default TextField.extend({
     classNames: 'gh-input',
-    classNameBindings: ['fakePlaceholder'],
 
     isBaseUrl: computed('baseUrl', 'value', function () {
         return this.get('baseUrl') === this.get('value');
-    }),
-
-    fakePlaceholder: computed('isBaseUrl', 'hasFocus', function () {
-        return this.get('isBaseUrl') && this.get('last') && !this.get('hasFocus');
     }),
 
     didReceiveAttrs() {
@@ -72,9 +68,10 @@ export default TextField.extend({
     },
 
     keyPress(event) {
+        invokeAction(this, 'clearErrors');
+
         // enter key
         if (event.keyCode === 13) {
-            event.preventDefault();
             this.notifyUrlChanged();
         }
 
@@ -136,6 +133,10 @@ export default TextField.extend({
 
             if (!url.match(/^\//)) {
                 url = `/${url}`;
+            }
+
+            if (!url.match(/\/$/) && !url.match(/[\.#\?]/)) {
+                url = `${url}/`;
             }
         }
 

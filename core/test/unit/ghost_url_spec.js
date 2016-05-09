@@ -1,5 +1,4 @@
 /* globals describe, beforeEach, afterEach, it */
-/*jshint expr:true*/
 var should     = require('should'),
     ghostUrl   = require('../../shared/ghost-url'),
 
@@ -74,6 +73,27 @@ describe('Ghost Ajax Helper', function () {
         rendered.should.match(/c=en\%20coded/);
     });
 
+    it('handles null/undefined queryOptions correctly', function () {
+        ghostUrl.init({
+            clientId: 'ghost-frontend',
+            clientSecret: 'notasecret',
+            url: 'test'
+        });
+
+        var test = {
+                a: null
+            },
+            rendered = ghostUrl.url.api(test.a), // null value
+            rendered2 = ghostUrl.url.api(test.b); // undefined value
+
+        rendered.should.match(/test/);
+        rendered.should.match(/client_id=ghost-frontend/);
+        rendered.should.match(/client_secret=notasecret/);
+        rendered2.should.match(/test/);
+        rendered2.should.match(/client_id=ghost-frontend/);
+        rendered2.should.match(/client_secret=notasecret/);
+    });
+
     it('generates complex query correctly', function () {
         ghostUrl.init({
             clientId: 'ghost-frontend',
@@ -126,5 +146,21 @@ describe('Ghost Ajax Helper', function () {
         rendered.should.match(/client_secret=notasecret/);
         rendered.should.match(/include=tags%2Ctests/);
         rendered.should.match(/page=2/);
+    });
+
+    it('should be idempotent', function () {
+        configUtils.set({
+            url: 'https://testblog.com/blog/'
+        });
+        ghostUrl.init({
+            clientId: 'ghost-frontend',
+            clientSecret: 'notasecret',
+            url: configUtils.config.apiUrl()
+        });
+
+        var rendered = ghostUrl.url.api('posts', {limit: 3}),
+            rendered2 = ghostUrl.url.api('posts', {limit: 3});
+
+        rendered.should.equal(rendered2);
     });
 });

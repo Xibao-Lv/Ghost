@@ -1,15 +1,19 @@
 import Ember from 'ember';
-import DS from 'ember-data';
+import RESTAdapter from 'ember-data/adapters/rest';
 import ghostPaths from 'ghost/utils/ghost-paths';
+import DataAdapterMixin from 'ember-simple-auth/mixins/data-adapter-mixin';
 
-const {inject} = Ember;
-const {RESTAdapter} = DS;
+const {
+    inject: {service}
+} = Ember;
 
-export default RESTAdapter.extend({
+export default RESTAdapter.extend(DataAdapterMixin, {
+    authorizer: 'authorizer:oauth2',
+
     host: window.location.origin,
     namespace: ghostPaths().apiRoot.slice(1),
 
-    session: inject.service('session'),
+    session: service(),
 
     shouldBackgroundReloadRecord() {
         return false;
@@ -26,29 +30,15 @@ export default RESTAdapter.extend({
         return this.ajax(this.buildURL(type.modelName, id), 'GET', {data: query});
     },
 
-    buildURL(type, id) {
+    buildURL() {
         // Ensure trailing slashes
-        let url = this._super(type, id);
+        let url = this._super(...arguments);
 
         if (url.slice(-1) !== '/') {
             url += '/';
         }
 
         return url;
-    },
-
-    // Override deleteRecord to disregard the response body on 2xx responses.
-    // This is currently needed because the API is returning status 200 along
-    // with the JSON object for the deleted entity and Ember expects an empty
-    // response body for successful DELETEs.
-    // Non-2xx (failure) responses will still work correctly as Ember will turn
-    // them into rejected promises.
-    deleteRecord() {
-        let response = this._super(...arguments);
-
-        return response.then(() => {
-            return null;
-        });
     },
 
     handleResponse(status) {

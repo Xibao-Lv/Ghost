@@ -1,5 +1,4 @@
 /*globals describe, before, beforeEach, afterEach, it */
-/*jshint expr:true*/
 var testUtils        = require('../../utils'),
     should           = require('should'),
     _                = require('lodash'),
@@ -28,7 +27,7 @@ describe('Notifications API', function () {
             should.exist(result.notifications);
 
             notification = result.notifications[0];
-            notification.dismissible.should.be.true;
+            notification.dismissible.should.be.true();
             should.exist(notification.location);
             notification.location.should.equal('bottom');
 
@@ -49,7 +48,7 @@ describe('Notifications API', function () {
             should.exist(result.notifications);
 
             notification = result.notifications[0];
-            notification.dismissible.should.be.true;
+            notification.dismissible.should.be.true();
             should.exist(notification.location);
             notification.location.should.equal('bottom');
 
@@ -71,7 +70,7 @@ describe('Notifications API', function () {
             should.exist(result.notifications);
 
             notification = result.notifications[0];
-            notification.id.should.be.a.Number;
+            notification.id.should.be.a.Number();
             notification.id.should.not.equal(99);
             should.exist(notification.status);
             notification.status.should.equal('alert');
@@ -124,9 +123,7 @@ describe('Notifications API', function () {
             NotificationsAPI.destroy(
                 _.extend({}, testUtils.context.internal, {id: notification.id})
             ).then(function (result) {
-                should.exist(result);
-                should.exist(result.notifications);
-                result.notifications[0].id.should.equal(notification.id);
+                should.not.exist(result);
 
                 done();
             }).catch(done);
@@ -145,9 +142,7 @@ describe('Notifications API', function () {
             NotificationsAPI.destroy(
                 _.extend({}, testUtils.context.owner, {id: notification.id})
             ).then(function (result) {
-                should.exist(result);
-                should.exist(result.notifications);
-                result.notifications[0].id.should.equal(notification.id);
+                should.not.exist(result);
 
                 done();
             }).catch(done);

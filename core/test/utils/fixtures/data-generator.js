@@ -53,6 +53,12 @@ DataGenerator.Content = {
             markdown: "<h1>Static page test is what this is for.</h1><p>Hopefully you don't find it a bore.</p>",
             page: 1,
             status: "draft"
+        },
+        {
+            title: "This is a scheduled post!!",
+            slug: "scheduled-post",
+            markdown: "<h1>Welcome to my invisible post!</h1>",
+            status: "scheduled"
         }
     ],
 
@@ -245,7 +251,9 @@ DataGenerator.forKnex = (function () {
         clients;
 
     function createBasic(overrides) {
-        return _.defaults(overrides, {
+        var newObj = _.cloneDeep(overrides);
+
+        return _.defaults(newObj, {
             uuid: uuid.v4(),
             created_by: 1,
             created_at: new Date(),
@@ -255,7 +263,9 @@ DataGenerator.forKnex = (function () {
     }
 
     function createPost(overrides) {
-        return _.defaults(overrides, {
+        var newObj = _.cloneDeep(overrides);
+
+        return _.defaults(newObj, {
             uuid: uuid.v4(),
             status: 'published',
             html: overrides.markdown,
@@ -291,7 +301,9 @@ DataGenerator.forKnex = (function () {
     }
 
     function createUser(overrides) {
-        return _.defaults(overrides, {
+        var newObj = _.cloneDeep(overrides);
+
+        return _.defaults(newObj, {
             uuid: uuid.v4(),
             status: 'active',
             created_by: 1,
@@ -316,7 +328,9 @@ DataGenerator.forKnex = (function () {
     }
 
     function createAppField(overrides) {
-        return _.defaults(overrides, {
+        var newObj = _.cloneDeep(overrides);
+
+        return _.defaults(newObj, {
             uuid: uuid.v4(),
             created_by: 1,
             created_at: new Date(),
@@ -328,7 +342,9 @@ DataGenerator.forKnex = (function () {
     }
 
     function createAppSetting(overrides) {
-        return _.defaults(overrides, {
+        var newObj = _.cloneDeep(overrides);
+
+        return _.defaults(newObj, {
             uuid: uuid.v4(),
             app_id: 1,
             created_by: 1,
@@ -337,7 +353,9 @@ DataGenerator.forKnex = (function () {
     }
 
     function createToken(overrides) {
-        return _.defaults(overrides, {
+        var newObj = _.cloneDeep(overrides);
+
+        return _.defaults(newObj, {
             token: uuid.v4(),
             client_id: 1,
             expires: Date.now() + globalUtils.ONE_DAY_MS
@@ -351,7 +369,8 @@ DataGenerator.forKnex = (function () {
         createPost(DataGenerator.Content.posts[3]),
         createPost(DataGenerator.Content.posts[4]),
         createPost(DataGenerator.Content.posts[5]),
-        createPost(DataGenerator.Content.posts[6])
+        createPost(DataGenerator.Content.posts[6]),
+        createPost(DataGenerator.Content.posts[7])
     ];
 
     tags = [

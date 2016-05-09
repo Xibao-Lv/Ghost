@@ -5,7 +5,7 @@ import {
     it
 } from 'mocha';
 import validator from 'ghost/validators/nav-item';
-import { NavItem } from 'ghost/controllers/settings/navigation';
+import NavItem from 'ghost/models/navigation-item';
 
 const testInvalidUrl = function (url) {
     let navItem = NavItem.create({url});
@@ -41,14 +41,6 @@ describe('Unit: Validator: nav-item', function () {
             message: 'You must specify a label'
         }]);
         expect(navItem.get('hasValidated')).to.include('label');
-    });
-
-    it('doesn\'t validate label if empty and last', function () {
-        let navItem = NavItem.create({last: true});
-
-        validator.check(navItem, 'label');
-
-        expect(validator.get('passed')).to.be.true;
     });
 
     it('requires url presence', function () {
@@ -95,14 +87,6 @@ describe('Unit: Validator: nav-item', function () {
         validUrls.forEach(function (url) {
             testValidUrl(url);
         });
-    });
-
-    it('doesn\'t validate url if empty and last', function () {
-        let navItem = NavItem.create({last: true});
-
-        validator.check(navItem, 'url');
-
-        expect(validator.get('passed')).to.be.true;
     });
 
     it('validates url and label by default', function () {

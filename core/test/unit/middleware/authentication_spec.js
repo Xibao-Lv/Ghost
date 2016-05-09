@@ -1,10 +1,8 @@
 /*globals describe, it, beforeEach, afterEach */
-/*jshint expr:true*/
 var sinon                   = require('sinon'),
     should                  = require('should'),
     passport                = require('passport'),
     rewire                  = require('rewire'),
-    configUtils             = require('../../utils/configUtils'),
     errors                  = require('../../../server/errors'),
     auth                    = rewire('../../../server/middleware/auth'),
     BearerStrategy          = require('passport-http-bearer').Strategy,
@@ -104,8 +102,8 @@ describe('Auth', function () {
         req.user = {id: 1};
 
         auth.requiresAuthorizedUser(req, res, next);
-        next.called.should.be.true;
-        next.calledWith().should.be.true;
+        next.called.should.be.true();
+        next.calledWith().should.be.true();
         done();
     });
 
@@ -123,19 +121,11 @@ describe('Auth', function () {
         });
 
         auth.requiresAuthorizedUser(req, res, next);
-        next.called.should.be.false;
+        next.called.should.be.false();
         done();
     });
 
     describe('User Authentication', function () {
-        beforeEach(function () {
-            configUtils.set({url: 'http://my-domain.com'});
-        });
-
-        afterEach(function () {
-            configUtils.restore();
-        });
-
         it('should authenticate user', function (done) {
             req.headers = {};
             req.headers.authorization = 'Bearer ' + token;
@@ -143,8 +133,8 @@ describe('Auth', function () {
             registerSuccessfulBearerStrategy();
             auth.authenticateUser(req, res, next);
 
-            next.called.should.be.true;
-            next.calledWith(null, user, info).should.be.true;
+            next.called.should.be.true();
+            next.calledWith(null, user, info).should.be.true();
             done();
         });
 
@@ -155,8 +145,8 @@ describe('Auth', function () {
 
             auth.authenticateUser(req, res, next);
 
-            next.called.should.be.true;
-            next.calledWith().should.be.true;
+            next.called.should.be.true();
+            next.calledWith().should.be.true();
             done();
         });
 
@@ -177,7 +167,7 @@ describe('Auth', function () {
             registerUnsuccessfulBearerStrategy();
             auth.authenticateUser(req, res, next);
 
-            next.called.should.be.false;
+            next.called.should.be.false();
             done();
         });
 
@@ -197,7 +187,7 @@ describe('Auth', function () {
             registerUnsuccessfulBearerStrategy();
             auth.authenticateUser(req, res, next);
 
-            next.called.should.be.false;
+            next.called.should.be.false();
             done();
         });
 
@@ -219,7 +209,7 @@ describe('Auth', function () {
             registerUnsuccessfulBearerStrategy();
             auth.authenticateUser(req, res, next);
 
-            next.called.should.be.false;
+            next.called.should.be.false();
             done();
         });
 
@@ -230,8 +220,8 @@ describe('Auth', function () {
             registerFaultyBearerStrategy();
             auth.authenticateUser(req, res, next);
 
-            next.called.should.be.true;
-            next.calledWith('error').should.be.true;
+            next.called.should.be.true();
+            next.calledWith('error').should.be.true();
             done();
         });
     });
@@ -242,8 +232,8 @@ describe('Auth', function () {
             req.headers.authorization = 'Bearer ' + token;
 
             auth.authenticateClient(req, res, next);
-            next.called.should.be.true;
-            next.calledWith().should.be.true;
+            next.called.should.be.true();
+            next.calledWith().should.be.true();
             done();
         });
 
@@ -263,7 +253,7 @@ describe('Auth', function () {
             });
 
             auth.authenticateClient(req, res, next);
-            next.called.should.be.false;
+            next.called.should.be.false();
             done();
         });
 
@@ -281,7 +271,7 @@ describe('Auth', function () {
             });
 
             auth.authenticateClient(req, res, next);
-            next.called.should.be.false;
+            next.called.should.be.false();
             done();
         });
 
@@ -300,7 +290,7 @@ describe('Auth', function () {
             });
 
             auth.authenticateClient(req, res, next);
-            next.called.should.be.false;
+            next.called.should.be.false();
             done();
         });
 
@@ -319,7 +309,7 @@ describe('Auth', function () {
             });
 
             auth.authenticateClient(req, res, next);
-            next.called.should.be.false;
+            next.called.should.be.false();
             done();
         });
 
@@ -339,8 +329,8 @@ describe('Auth', function () {
 
             registerUnsuccessfulClientPasswordStrategy();
             auth.authenticateClient(req, res, next);
-            next.called.should.be.false;
-            errorStub.calledTwice.should.be.true;
+            next.called.should.be.false();
+            errorStub.calledTwice.should.be.true();
             errorStub.getCall(0).args[1].should.eql('Client credentials were not provided');
 
             done();
@@ -363,33 +353,10 @@ describe('Auth', function () {
 
             registerUnsuccessfulClientPasswordStrategy();
             auth.authenticateClient(req, res, next);
-            next.called.should.be.false;
-            errorStub.calledTwice.should.be.true;
+            next.called.should.be.false();
+            errorStub.calledTwice.should.be.true();
             errorStub.getCall(0).args[1].should.eql('Client credentials were not valid');
 
-            done();
-        });
-
-        it('shouldn\'t authenticate client with invalid origin', function (done) {
-            req.body = {};
-            req.body.client_id = testClient;
-            req.body.client_secret = testSecret;
-            req.headers = {};
-            req.headers.origin = 'http://invalid.origin.com';
-            res.status = {};
-
-            sandbox.stub(res, 'status', function (statusCode) {
-                statusCode.should.eql(401);
-                return {
-                    json: function (err) {
-                        err.errors[0].errorType.should.eql('UnauthorizedError');
-                    }
-                };
-            });
-
-            registerSuccessfulClientPasswordStrategy();
-            auth.authenticateClient(req, res, next);
-            next.called.should.be.false;
             done();
         });
 
@@ -398,84 +365,12 @@ describe('Auth', function () {
             req.body.client_id = testClient;
             req.body.client_secret = testSecret;
             req.headers = {};
-            req.headers.origin = configUtils.config.url;
-
-            res.header = {};
-
-            sandbox.stub(res, 'header', function (key, value) {
-                key.should.equal('Access-Control-Allow-Origin');
-                value.should.equal(configUtils.config.url);
-            });
 
             registerSuccessfulClientPasswordStrategy();
             auth.authenticateClient(req, res, next);
 
-            next.called.should.be.true;
-            next.calledWith(null, client).should.be.true;
-            done();
-        });
-
-        it('should authenticate client without origin', function (done) {
-            req.body = {};
-            req.body.client_id = testClient;
-            req.body.client_secret = testSecret;
-
-            res.header = {};
-
-            sandbox.stub(res, 'header', function (key, value) {
-                key.should.equal('Access-Control-Allow-Origin');
-                value.should.equal(configUtils.config.url);
-            });
-
-            registerSuccessfulClientPasswordStrategy();
-            auth.authenticateClient(req, res, next);
-
-            next.called.should.be.true;
-            next.calledWith(null, client).should.be.true;
-            done();
-        });
-
-        it('should authenticate client with origin `localhost`', function (done) {
-            req.body = {};
-            req.body.client_id = testClient;
-            req.body.client_secret = testSecret;
-            req.headers = {};
-            req.headers.origin = 'http://localhost';
-
-            res.header = {};
-
-            sandbox.stub(res, 'header', function (key, value) {
-                key.should.equal('Access-Control-Allow-Origin');
-                value.should.equal('http://localhost');
-            });
-
-            registerSuccessfulClientPasswordStrategy();
-            auth.authenticateClient(req, res, next);
-
-            next.called.should.be.true;
-            next.calledWith(null, client).should.be.true;
-            done();
-        });
-
-        it('should authenticate client with origin `127.0.0.1`', function (done) {
-            req.body = {};
-            req.body.client_id = testClient;
-            req.body.client_secret = testSecret;
-            req.headers = {};
-            req.headers.origin = 'http://127.0.0.1';
-
-            res.header = {};
-
-            sandbox.stub(res, 'header', function (key, value) {
-                key.should.equal('Access-Control-Allow-Origin');
-                value.should.equal('http://127.0.0.1');
-            });
-
-            registerSuccessfulClientPasswordStrategy();
-            auth.authenticateClient(req, res, next);
-
-            next.called.should.be.true;
-            next.calledWith(null, client).should.be.true;
+            next.called.should.be.true();
+            next.calledWith(null, client).should.be.true();
             done();
         });
 
@@ -485,20 +380,12 @@ describe('Auth', function () {
             req.query.client_id = testClient;
             req.query.client_secret = testSecret;
             req.headers = {};
-            req.headers.origin = configUtils.config.url;
-
-            res.header = {};
-
-            sandbox.stub(res, 'header', function (key, value) {
-                key.should.equal('Access-Control-Allow-Origin');
-                value.should.equal(configUtils.config.url);
-            });
 
             registerSuccessfulClientPasswordStrategy();
             auth.authenticateClient(req, res, next);
 
-            next.called.should.be.true;
-            next.calledWith(null, client).should.be.true;
+            next.called.should.be.true();
+            next.calledWith(null, client).should.be.true();
             done();
         });
 
@@ -508,20 +395,12 @@ describe('Auth', function () {
             req.query.client_id = testClient;
             req.query.client_secret = testSecret;
             req.headers = {};
-            req.headers.origin = configUtils.config.url;
-
-            res.header = {};
-
-            sandbox.stub(res, 'header', function (key, value) {
-                key.should.equal('Access-Control-Allow-Origin');
-                value.should.equal(configUtils.config.url);
-            });
 
             registerSuccessfulClientPasswordStrategy();
             auth.authenticateClient(req, res, next);
 
-            next.called.should.be.true;
-            next.calledWith(null, client).should.be.true;
+            next.called.should.be.true();
+            next.calledWith(null, client).should.be.true();
             done();
         });
 
@@ -534,8 +413,8 @@ describe('Auth', function () {
             registerFaultyClientPasswordStrategy();
             auth.authenticateClient(req, res, next);
 
-            next.called.should.be.true;
-            next.calledWith('error').should.be.true;
+            next.called.should.be.true();
+            next.calledWith('error').should.be.true();
             done();
         });
     });
